@@ -1,10 +1,13 @@
 # výstupem by mělo být (pro každý kontejner): name, cpu a memory usage, created_at, status a všechny přiřazené IP adresy. Datumová pole převeďte na UTC timestamp.  
 
 from functools import reduce
-
 import json
 import datetime
 
+from tinydb import TinyDB
+
+
+db = TinyDB('db.json')
 
 def get_by_keys(dct, *keys):
     return reduce(lambda d, key: d.get(key) if d else None, keys, dct)
@@ -35,6 +38,12 @@ for i in data:
             for y in x_addresses:
                 addresses.append(get_by_keys(y, 'address'))
 
-    print(name, cpu_usage, memory_usage, created_at, status, addresses)
-    print('\n')
+    db.insert({
+                'name': name, 
+                'cpu_usage': cpu_usage, 
+                'memory_usage': memory_usage, 
+                'created_at': created_at,
+                'status': status,
+                'addresses': addresses
+                })
 
