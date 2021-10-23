@@ -1,66 +1,40 @@
 # výstupem by mělo být (pro každý kontejner): name, cpu a memory usage, created_at, status a všechny přiřazené IP adresy. Datumová pole převeďte na UTC timestamp.  
 
+from functools import reduce
+
 import json
 import datetime
+
+
+def get_by_keys(dct, *keys):
+    return reduce(lambda d, key: d.get(key) if d else None, keys, dct)
 
 
 with open('sample-data.json') as f:
     data = json.load(f)
 
-for i in range(len(data)):
-    print(i)
+for i in data:
+    name = get_by_keys(i, 'name')
 
-    informations = {
-        'name' : None,
-        'cpu_usage' : None,
-        'memory_usage' : None,
-        'created_at' : None,
-        'status' : None,
-        'addresses' : None,
-    }
+    cpu_usage = get_by_keys(i, 'state', 'cpu', 'usage')
 
-    # name 
-    try:
-        informations['name'] = data[i]['name']
-    except TypeError:
-        pass
-    
-    # cpu usage 
-    try:
-        informations['cpu_usage'] = data[i]['state']['cpu']['usage']
-    except TypeError:
-        pass
+    memory_usage = get_by_keys(i, 'state', 'memory', 'usage')
 
-    # memory usage
-    try:
-        informations['memory_usage'] = data[i]['state']['memory']['usage']
-    except TypeError:
-        pass
+    created_at = get_by_keys(i, 'created_at')
+    if created_at:
+        created_at = datetime.datetime.fromisoformat(created_at)
+        created_at = int(created_at.timestamp())
 
-    # created at
-    try:
-        dt = datetime.datetime.fromisoformat(data[i]['created_at'])
-        timestamp = int(dt.timestamp())
-        informations['created_at'] = timestamp
-    except TypeError:
-        pass
+    status = get_by_keys(i, 'status')
 
-    # status
-    try:
-        informations['status'] = data[i]['status']
-    except TypeError:
-        pass
+    addresses = []
+    network = get_by_keys(i, 'state', 'network')
+    if network:
+        for x in network:
+            x_addresses = get_by_keys(network[x], 'addresses')
+            for y in x_addresses:
+                addresses.append(get_by_keys(y, 'address'))
 
-    # addresses
-    try:
-        addresses = []
-        network = data[i]['state']['network']
-        for i in network:
-            for k in network[i]['addresses']:
-                addresses.append(k['address'])
-        informations['addresses'] = addresses
-    except TypeError:
-        pass
-
-    print(informations)
+    print(name, cpu_usage, memory_usage, created_at, status, addresses)
     print('\n')
+
